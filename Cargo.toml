@@ -1,0 +1,15 @@
+[package]
+name = "rust-spotify-sorter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clearscreen = "3.0.0"
+image = "=0.24.6"
+rascii_art = "=0.4.5"
+rodio = "0.19.0"
+rspotify = { version = "0.13.2", default-features = false, features = ["client-ureq", "ureq-rustls-tls", "cli", "env-file"] }
+terminal_size = "0.3.0"
+text_io = "0.1.12"
+ureq = "2.10.0"
+yansi = "1.0.1"
