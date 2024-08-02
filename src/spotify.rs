@@ -6,11 +6,15 @@ use rspotify::{
     scopes, AuthCodePkceSpotify, Config, Credentials, OAuth,
 };
 
+static APP_ID: &'static str = "9c7a1f7848ba4f5b839b4e199e2ed1a9";
+static REDIRECT_URI: &'static str = "http://localhost:8888/callback";
+static SCOPES: [&'static str; 2] = ["playlist-read-private", "playlist-read-collaborative"];
+
 pub fn authenticate() -> AuthCodePkceSpotify {
-    let creds = Credentials::new_pkce("9c7a1f7848ba4f5b839b4e199e2ed1a9"); // TODO extract to constant
+    let creds = Credentials::new_pkce(APP_ID);
     let oauth = OAuth {
-        redirect_uri: String::from("http://localhost:8888/callback"), // TODO extract to constant
-        scopes: scopes!("playlist-read-private", "playlist-read-collaborative"), // TODO extract to constant
+        redirect_uri: String::from(REDIRECT_URI),
+        scopes: scopes!(&SCOPES.join(" ")),
         ..Default::default()
     };
 
