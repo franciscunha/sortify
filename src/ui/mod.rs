@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use clearscreen::clear as clearscreen;
 use rspotify::model::{FullTrack, SimplifiedPlaylist};
 use text_io::read;
-use utils::string_to_half_screen;
+use utils::{string_to_half_screen, wrap_text_to_screen};
 use yansi::Paint;
 
 pub(crate) mod track;
@@ -17,11 +17,18 @@ pub enum TrackAction {
 }
 
 pub fn welcome() {
-    println!("Welcome to spotify sorter! Currently in development - expect a better UI soon");
+    println!("Welcome to spotify sorter!");
     println!();
 }
 
 pub fn choose_source(playlists: &Vec<SimplifiedPlaylist>) -> usize {
+    println!("Choose source playlist");
+    println!(
+        "{}",
+        wrap_text_to_screen(&"You'll have the option to 'sort' each track in this playlist. When sorted, tracks are added to other playlists, removed from the source, and added to your liked songs.".to_string()).italic().dim()
+    );
+    println!();
+
     let source_index = utils::choose_one(
         &playlists
             .iter()

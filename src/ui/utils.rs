@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use terminal_size::{terminal_size, Height, Width};
 use text_io::read;
 
@@ -44,11 +46,7 @@ pub fn choose_one(options: &Vec<String>) -> usize {
 
 pub fn screen_width() -> usize {
     if let Some((Width(w), Height(_))) = terminal_size() {
-        if w >= 48 {
-            48
-        } else {
-            32
-        }
+        min(48, w.into())
     } else {
         48
     }
@@ -79,4 +77,31 @@ pub fn string_to_half_screen(str: &String) -> String {
     } else {
         pad_string_right(str, half_screen_width)
     }
+}
+
+pub fn wrap_text_to_screen(text: &str) -> String {
+    let max_len = screen_width();
+    let mut result = String::new();
+    let mut line_len = 0;
+
+    for word in text.split_whitespace() {
+        let word_len = word.chars().count();
+
+        if line_len + word_len + 1 > max_len {
+            if line_len > 0 {
+                result.push('\n');
+            }
+            result.push_str(word);
+            line_len = word_len;
+        } else {
+            if line_len > 0 {
+                result.push(' ');
+                line_len += 1;
+            }
+            result.push_str(word);
+            line_len += word_len;
+        }
+    }
+
+    result
 }

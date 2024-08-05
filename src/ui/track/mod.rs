@@ -29,7 +29,7 @@ fn image(url: &String, cache: &mut HashMap<String, String>) -> Result<String, Bo
         &img,
         &mut buffer,
         &RenderOptions::new()
-            .width(48)
+            .width(screen_width().try_into().unwrap())
             .colored(true)
             .charset(charsets::BLOCK),
     )?;
