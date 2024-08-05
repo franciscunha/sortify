@@ -100,17 +100,15 @@ pub fn add_to_playlists(
     let mut errors: Vec<String> = Vec::new();
 
     for playlist_id in playlist_ids {
-        let is_ok = spotify
+        let is_err = spotify
             .playlist_add_items(
                 playlist_id.clone_static(),
                 iter::once(PlayableId::Track(track_id.clone())),
                 None,
             )
-            .is_ok();
+            .is_err();
 
-        if is_ok {
-            // TODO add to liked songs
-        } else {
+        if is_err {
             errors.push(
                 if let Ok(playlist) =
                     spotify.playlist(playlist_id.clone_static(), Some("name"), None)
@@ -121,6 +119,13 @@ pub fn add_to_playlists(
                 },
             );
         }
+    }
+
+    if spotify
+        .current_user_saved_tracks_add(iter::once(track_id.clone_static()))
+        .is_err()
+    {
+        errors.push(String::from("Liked Songs"));
     }
 
     if errors.is_empty() {
