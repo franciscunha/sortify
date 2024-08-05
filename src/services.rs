@@ -43,25 +43,34 @@ fn handle_track_action(
     action: TrackAction,
     source_playlist_id: PlaylistId<'static>,
 ) -> Result<TrackAction, SpotifyPlaylistsError> {
+    // get track's id
     let track_id = track.id.clone().unwrap();
+
     match action {
         TrackAction::Add(ref playlist_ids) => {
+            // call api to add to playlists
             spotify::add_to_playlists(spotify, &track_id, playlist_ids)
                 .inspect(|_| {
-                    spotify::remove_from_playlist(spotify, &track_id, &source_playlist_id);
+                    // if it worked, also remove from source
+                    _ = spotify::remove_from_playlist(spotify, &track_id, &source_playlist_id);
                 })
+                // map to this function's return type
                 .map(|_| action)
         }
         TrackAction::Remove(ref playlist_id) => {
+            // confirm desctructive action
             if ui::utils::confirmation(format!(
                 "Do you wish to remove {} from the source playlist?",
                 ui::track::summary(track)
             )) {
+                // on confirmation, call spotify api to remove from playlist
                 spotify::remove_from_playlist(spotify, &track_id, playlist_id).map(|_| action)
             } else {
+                // on cancel, treat action as a skip
                 Ok(TrackAction::Skip)
             }
         }
+        // skip doesn't error
         TrackAction::Skip => Ok(action),
     }
 }
