@@ -27,7 +27,6 @@ pub fn choose_source(playlists: &Vec<SimplifiedPlaylist>) -> usize {
             .iter()
             .map(|playlist| playlist.name.clone())
             .collect(),
-        String::from("Choose source playlist\n"),
     );
 
     _ = clearscreen();

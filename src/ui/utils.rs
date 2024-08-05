@@ -23,9 +23,7 @@ pub fn confirmation(prompt: String) -> bool {
     }
 }
 
-pub fn choose_one(options: &Vec<String>, prompt: String) -> usize {
-    println!("{}", prompt);
-
+pub fn choose_one(options: &Vec<String>) -> usize {
     for i in 0..options.len() {
         println!("{} - {}", i + 1, options[i]);
     }

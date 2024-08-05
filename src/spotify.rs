@@ -87,20 +87,23 @@ pub fn add_to_playlists(
     playlist_ids: Vec<PlaylistId<'static>>,
 ) -> Result<(), Vec<PlaylistId<'static>>> {
     // TODO simplify error handling or use the IDs on error feedback
+    // idea: use an error enum just for this, that tells caller if error was in adding to pls (to which), to liked songs or removing (from which)
+    // then simplify ui::track_action_feedback() to take just this enum as a parameter instead of result + action
 
     let mut errors: Vec<PlaylistId<'static>> = Vec::new();
 
     for playlist_id in playlist_ids {
-        let is_err = spotify
+        let is_ok = spotify
             .playlist_add_items(
                 playlist_id.clone_static(),
                 iter::once(PlayableId::Track(track_id.clone())),
                 None,
             )
-            .is_err();
-        // TODO add to liked songs
+            .is_ok();
 
-        if is_err {
+        if is_ok {
+            // TODO add to liked songs
+        } else {
             errors.push(playlist_id.clone_static());
         }
     }
