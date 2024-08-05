@@ -10,6 +10,11 @@ static APP_ID: &'static str = "9c7a1f7848ba4f5b839b4e199e2ed1a9";
 static REDIRECT_URI: &'static str = "http://localhost:8888/callback";
 static SCOPES: [&'static str; 2] = ["playlist-read-private", "playlist-read-collaborative"];
 
+pub enum SpotifyPlaylistsError {
+    Add(Vec<String>),
+    Remove(Vec<String>),
+}
+
 pub fn authenticate() -> AuthCodePkceSpotify {
     let creds = Credentials::new_pkce(APP_ID);
     let oauth = OAuth {
@@ -62,13 +67,11 @@ pub fn tracks_in_playlist(
 pub fn remove_from_playlist(
     spotify: &AuthCodePkceSpotify,
     track_id: &TrackId,
-    playlist_id: PlaylistId<'static>,
-) -> Result<(), ()> {
-    // TODO simplify error handling here
-
+    playlist_id: &PlaylistId<'static>,
+) -> Result<(), SpotifyPlaylistsError> {
     let is_ok = spotify
         .playlist_remove_all_occurrences_of_items(
-            playlist_id,
+            playlist_id.clone_static(),
             iter::once(PlayableId::Track(track_id.clone())),
             None,
         )
@@ -77,20 +80,24 @@ pub fn remove_from_playlist(
     if is_ok {
         Ok(())
     } else {
-        Err(())
+        if let Ok(playlist) = spotify.playlist(playlist_id.clone_static(), Some("name"), None) {
+            let name = playlist.name;
+            Err(SpotifyPlaylistsError::Remove(vec![name]))
+        } else {
+            Err(SpotifyPlaylistsError::Remove(vec![format!(
+                "Playlist with ID {}",
+                playlist_id
+            )]))
+        }
     }
 }
 
 pub fn add_to_playlists(
     spotify: &AuthCodePkceSpotify,
     track_id: &TrackId,
-    playlist_ids: Vec<PlaylistId<'static>>,
-) -> Result<(), Vec<PlaylistId<'static>>> {
-    // TODO simplify error handling or use the IDs on error feedback
-    // idea: use an error enum just for this, that tells caller if error was in adding to pls (to which), to liked songs or removing (from which)
-    // then simplify ui::track_action_feedback() to take just this enum as a parameter instead of result + action
-
-    let mut errors: Vec<PlaylistId<'static>> = Vec::new();
+    playlist_ids: &Vec<PlaylistId<'static>>,
+) -> Result<(), SpotifyPlaylistsError> {
+    let mut errors: Vec<String> = Vec::new();
 
     for playlist_id in playlist_ids {
         let is_ok = spotify
@@ -104,13 +111,21 @@ pub fn add_to_playlists(
         if is_ok {
             // TODO add to liked songs
         } else {
-            errors.push(playlist_id.clone_static());
+            errors.push(
+                if let Ok(playlist) =
+                    spotify.playlist(playlist_id.clone_static(), Some("name"), None)
+                {
+                    playlist.name
+                } else {
+                    format!("Playlist with ID {}", playlist_id)
+                },
+            );
         }
     }
 
     if errors.is_empty() {
         Ok(())
     } else {
-        Err(errors)
+        Err(SpotifyPlaylistsError::Add(errors))
     }
 }

@@ -6,6 +6,8 @@ use text_io::read;
 use utils::{string_to_half_screen, wrap_text_to_screen};
 use yansi::Paint;
 
+use crate::{services, spotify::SpotifyPlaylistsError};
+
 pub(crate) mod track;
 pub(crate) mod utils;
 
@@ -120,29 +122,35 @@ pub fn handle_track(
     }
 }
 
-pub fn track_action_feedback(track: &FullTrack, action: &TrackAction, result: Result<(), ()>) {
+pub fn track_action_feedback(
+    track: &FullTrack,
+    result: Result<services::TrackAction, SpotifyPlaylistsError>,
+) {
     _ = clearscreen();
 
-    let msg = if result.is_err() {
-        format!(
-            "Failed to {}, track wasn't removed from source playlist",
-            match action {
-                TrackAction::Add(_) => "add track to some of the playlists",
-                TrackAction::Remove => "remove",
-                TrackAction::Skip => "skip??",
-                TrackAction::Quit => "quit???",
-            }
-        )
-    } else {
-        match action {
-            TrackAction::Add(_) => format!("Sucessfully sorted {}", &track.name),
-            TrackAction::Remove => format!(
+    let track_summary = track::summary(track);
+
+    let msg = match result {
+        Ok(action) => match action {
+            services::TrackAction::Add(_) => format!("Sucessfully sorted {}", track_summary),
+            services::TrackAction::Remove(_) => format!(
                 "Removed {} from source playlist without sorting it",
-                &track.name
+                track_summary
             ),
-            TrackAction::Skip => format!("Skipped {}", &track.name),
-            TrackAction::Quit => format!("Quitting application"),
-        }
+            services::TrackAction::Skip => format!("Skipped {}", track_summary),
+        },
+        Err(playlists_error) => match playlists_error {
+            SpotifyPlaylistsError::Add(playlists) => format!(
+                "Failed to add {} to the playlist(s) {}",
+                track_summary,
+                playlists.join(", ")
+            ),
+            SpotifyPlaylistsError::Remove(playlists) => format!(
+                "Failed to remove {} from the playlist(s) {}",
+                track_summary,
+                playlists.join(", ")
+            ),
+        },
     };
 
     println!("{}", msg);

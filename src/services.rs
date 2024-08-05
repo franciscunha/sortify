@@ -5,7 +5,11 @@ use rspotify::{
     AuthCodePkceSpotify,
 };
 
-use crate::{audio, spotify, ui};
+use crate::{
+    audio,
+    spotify::{self, SpotifyPlaylistsError},
+    ui,
+};
 
 pub enum TrackAction {
     Add(Vec<PlaylistId<'static>>),
@@ -38,28 +42,27 @@ fn handle_track_action(
     track: &FullTrack,
     action: TrackAction,
     source_playlist_id: PlaylistId<'static>,
-) -> Result<(), ()> {
+) -> Result<TrackAction, SpotifyPlaylistsError> {
     let track_id = track.id.clone().unwrap();
     match action {
-        TrackAction::Add(playlist_ids) => {
-            if spotify::add_to_playlists(spotify, &track_id, playlist_ids).is_ok() {
-                _ = spotify::remove_from_playlist(spotify, &track_id, source_playlist_id);
-                Ok(())
-            } else {
-                Err(())
-            }
+        TrackAction::Add(ref playlist_ids) => {
+            spotify::add_to_playlists(spotify, &track_id, playlist_ids)
+                .inspect(|_| {
+                    spotify::remove_from_playlist(spotify, &track_id, &source_playlist_id);
+                })
+                .map(|_| action)
         }
-        TrackAction::Remove(playlist_id) => {
+        TrackAction::Remove(ref playlist_id) => {
             if ui::utils::confirmation(format!(
-                "do you wish to remove {} from the source playlist?",
+                "Do you wish to remove {} from the source playlist?",
                 ui::track::summary(track)
             )) {
-                spotify::remove_from_playlist(spotify, &track_id, playlist_id)
+                spotify::remove_from_playlist(spotify, &track_id, playlist_id).map(|_| action)
             } else {
-                Ok(())
+                Ok(TrackAction::Skip)
             }
         }
-        TrackAction::Skip => Ok(()),
+        TrackAction::Skip => Ok(action),
     }
 }
 
@@ -100,7 +103,7 @@ pub fn handle_track(
     );
 
     // inform user of success or failure
-    ui::track_action_feedback(&track, &ui_action, result);
+    ui::track_action_feedback(&track, result);
 
     // stop playing track preview before moving on to next one
     if let Some(audio) = audio_player {
