@@ -22,6 +22,8 @@ fn main() {
 
     let tracks = spotify::tracks_in_playlist(&spotify, source_playlist_id.clone_static());
 
+    let mut audio_player = audio::AudioPlayer::new();
+
     for track in tracks {
         if let ControlFlow::Break(_) = services::handle_track(
             track,
@@ -29,6 +31,7 @@ fn main() {
             &mut image_cache,
             &source_playlist_id,
             &spotify,
+            &mut audio_player,
         ) {
             ui::goodbye(None);
             return;

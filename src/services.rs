@@ -6,7 +6,7 @@ use rspotify::{
 };
 
 use crate::{
-    audio,
+    audio::AudioPlayer,
     spotify::{self, SpotifyPlaylistsError},
     ui,
 };
@@ -84,13 +84,16 @@ pub fn handle_track(
     image_cache: &mut HashMap<String, String>,
     source_playlist_id: &PlaylistId<'_>,
     spotify: &AuthCodePkceSpotify,
+    audio_player: &mut Option<AudioPlayer>,
 ) -> ControlFlow<()> {
     if let None = track.id {
         return ControlFlow::Continue(());
     }
 
     // start playing track preview in separate thread while other things load
-    let audio_player = audio::play_track_preview(&track);
+    if let Some(audio) = audio_player {
+        audio.play_track_preview(&track);
+    }
 
     // spin up ui for a track and get user's interaction
     let ui_action = loop {
@@ -105,7 +108,7 @@ pub fn handle_track(
 
         // if asked to change volume, stay in loop to get different action
         if let ui::TrackAction::ChangeVolume(up) = ui_action {
-            if let Some(ref audio) = audio_player {
+            if let Some(audio) = audio_player {
                 if up {
                     audio.volume_up();
                 } else {
