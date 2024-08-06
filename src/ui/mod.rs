@@ -19,8 +19,45 @@ pub enum TrackAction {
 }
 
 pub fn welcome() {
-    println!("Welcome to spotify sorter!");
+    println!("♪♫♪ {}", "Welcome to Sortify!".bold().italic());
+}
+
+pub fn confirm_account(user_name: Option<String>) -> bool {
     println!();
+
+    if let Some(name) = user_name {
+        println!(
+            "{}",
+            wrap_text_to_screen(&format!(
+                "{} {}. {}",
+                "Logged into Spotify as".italic(),
+                name.green(),
+                "Press 'l' to log out, 'q' to quit, or any other key to continue.".italic()
+            ))
+        );
+
+        print!("Choice: ");
+        let user_input: char = read!();
+        println!();
+
+        if user_input == 'l' {
+            if services::log_out() {
+                println!("Succesfully logged out. Please restart the program to log in with a different account.");
+            } else {
+                println!("Failed to log out. Please restart the program to try again.");
+            }
+        }
+        if user_input == 'l' || user_input == 'q' {
+            return false;
+        }
+    } else {
+        println!(
+            "Error logging into your Spotify account. Please restart the program to try again."
+        );
+        return false;
+    }
+
+    true
 }
 
 pub fn choose_source(playlists: &Vec<SimplifiedPlaylist>) -> usize {

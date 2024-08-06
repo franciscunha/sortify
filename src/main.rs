@@ -6,11 +6,17 @@ mod spotify;
 mod ui;
 
 fn main() {
+    ui::welcome();
+
     let spotify = spotify::authenticate();
     let playlists = spotify::my_playlists(&spotify);
     let mut image_cache: HashMap<String, String> = HashMap::new();
 
-    ui::welcome();
+    if !ui::confirm_account(spotify::user_name(&spotify)) {
+        ui::goodbye(None);
+        return;
+    }
+
     let source_playlist_index = ui::choose_source(&playlists);
     let source_playlist_id = playlists[source_playlist_index].id.clone_static();
 
@@ -24,6 +30,7 @@ fn main() {
             &source_playlist_id,
             &spotify,
         ) {
+            ui::goodbye(None);
             return;
         }
     }

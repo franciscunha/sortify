@@ -37,6 +37,10 @@ pub fn authenticate() -> AuthCodePkceSpotify {
     spotify
 }
 
+pub fn user_name(spotify: &AuthCodePkceSpotify) -> Option<String> {
+    spotify.current_user().unwrap().display_name
+}
+
 pub fn my_playlists(spotify: &AuthCodePkceSpotify) -> Vec<SimplifiedPlaylist> {
     let user_id = spotify.current_user().unwrap().id;
     spotify

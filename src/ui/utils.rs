@@ -79,7 +79,7 @@ pub fn string_to_half_screen(str: &String) -> String {
     }
 }
 
-pub fn wrap_text_to_screen(text: &str) -> String {
+pub fn wrap_text_to_screen(text: &String) -> String {
     let max_len = screen_width();
     let mut result = String::new();
     let mut line_len = 0;

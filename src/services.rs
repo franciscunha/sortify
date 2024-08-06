@@ -94,7 +94,6 @@ pub fn handle_track(
 
     // if user chose to quit
     if let ui::TrackAction::Quit = ui_action {
-        ui::goodbye(None);
         // stop audio
         if let Some(audio) = audio_player {
             audio.stop();
@@ -120,4 +119,9 @@ pub fn handle_track(
     }
 
     ControlFlow::Continue(())
+}
+
+pub fn log_out() -> bool {
+    let path = std::path::Path::new(".spotify_token_cache.json");
+    path.exists() && std::fs::remove_file(path).is_ok()
 }
