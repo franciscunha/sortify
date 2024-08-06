@@ -125,7 +125,7 @@ pub fn handle_track(
         if let Some(vol) = volume {
             println!();
             println!(
-                "u - Volume up | d - Volume down | Current volume: {:.1}",
+                "Current volume: {:.1}\nu - Volume up | d - Volume down",
                 vol
             );
             println!();
