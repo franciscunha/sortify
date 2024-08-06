@@ -33,6 +33,9 @@ impl TrackAction {
             ui::TrackAction::Remove => TrackAction::Remove(source_playlist_id),
             ui::TrackAction::Skip => TrackAction::Skip,
             ui::TrackAction::Quit => panic!("request to quit application was passed to services"),
+            ui::TrackAction::ChangeVolume(_) => {
+                panic!("request to change volume was passed to services")
+            }
         }
     }
 }
@@ -90,7 +93,29 @@ pub fn handle_track(
     let audio_player = audio::play_track_preview(&track);
 
     // spin up ui for a track and get user's interaction
-    let ui_action = ui::handle_track(&track, playlists, image_cache);
+    let ui_action = loop {
+        let ui_action = ui::handle_track(
+            &track,
+            playlists,
+            image_cache,
+            audio_player
+                .as_ref()
+                .map(|audio_player| audio_player.volume()),
+        );
+
+        // if asked to change volume, stay in loop to get different action
+        if let ui::TrackAction::ChangeVolume(up) = ui_action {
+            if let Some(ref audio) = audio_player {
+                if up {
+                    audio.volume_up();
+                } else {
+                    audio.volume_down();
+                }
+            }
+        } else {
+            break ui_action;
+        }
+    };
 
     // if user chose to quit
     if let ui::TrackAction::Quit = ui_action {

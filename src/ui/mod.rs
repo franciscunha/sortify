@@ -15,6 +15,7 @@ pub enum TrackAction {
     Add(Vec<usize>),
     Remove,
     Skip,
+    ChangeVolume(bool),
     Quit,
 }
 
@@ -90,6 +91,7 @@ pub fn handle_track(
     track: &FullTrack,
     playlists: &Vec<SimplifiedPlaylist>,
     image_cache: &mut HashMap<String, String>,
+    volume: Option<f32>,
 ) -> TrackAction {
     let mut selected: Vec<bool> = vec![false; playlists.len()];
     let playlist_names: Vec<&String> = playlists.iter().map(|playlist| &playlist.name).collect();
@@ -120,6 +122,14 @@ pub fn handle_track(
         println!("a - Confirm and add to playlists");
         println!("s - Skip track");
         println!("r - Remove from source without adding");
+        if let Some(vol) = volume {
+            println!();
+            println!(
+                "u - Volume up | d - Volume down | Current volume: {:.1}",
+                vol
+            );
+            println!();
+        }
         println!("q - Quit");
         println!();
 
@@ -131,6 +141,22 @@ pub fn handle_track(
             "r" => break TrackAction::Remove,
             "s" => break TrackAction::Skip,
             "q" => break TrackAction::Quit,
+            "u" => {
+                if let Some(_) = volume {
+                    // causes loop without feedback, so screen needs clearing
+                    _ = clearscreen();
+                    break TrackAction::ChangeVolume(true);
+                }
+                ()
+            }
+            "d" => {
+                if let Some(_) = volume {
+                    // causes loop without feedback, so screen needs clearing
+                    _ = clearscreen();
+                    break TrackAction::ChangeVolume(false);
+                }
+                ()
+            }
             "a" => {
                 break {
                     let mut indexes: Vec<usize> = Vec::new();
@@ -153,9 +179,8 @@ pub fn handle_track(
             }
         }
 
-        _ = clearscreen::clear(); // workaround because for some reason the inner
-                                  // loop (that parses input) doesn't run fully
-                                  // before printing the list again
+        _ = clearscreen(); // workaround because for some reason the above loop
+                           // doesn't run fully before printing the list again
     }
 }
 

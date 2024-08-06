@@ -36,6 +36,18 @@ impl AudioPlayer {
     pub fn stop(self) {
         self.sink.stop();
     }
+
+    pub fn volume_up(&self) {
+        self.sink.set_volume(self.sink.volume() + 0.1);
+    }
+
+    pub fn volume_down(&self) {
+        self.sink.set_volume(self.sink.volume() - 0.1);
+    }
+
+    pub fn volume(&self) -> f32 {
+        self.sink.volume()
+    }
 }
 
 pub fn play_track_preview(track: &FullTrack) -> Option<AudioPlayer> {
