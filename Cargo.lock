@@ -1446,21 +1446,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-spotify-sorter"
-version = "0.1.0"
-dependencies = [
- "clearscreen",
- "image",
- "rascii_art",
- "rodio",
- "rspotify",
- "terminal_size",
- "text_io",
- "ureq",
- "yansi",
-]
-
-[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1614,6 +1599,21 @@ dependencies = [
  "byteorder",
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "sortify"
+version = "1.0.0"
+dependencies = [
+ "clearscreen",
+ "image",
+ "rascii_art",
+ "rodio",
+ "rspotify",
+ "terminal_size",
+ "text_io",
+ "ureq",
+ "yansi",
 ]
 
 [[package]]
