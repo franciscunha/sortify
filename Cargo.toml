@@ -2,6 +2,14 @@
 name = "sortify"
 version = "1.0.0"
 edition = "2021"
+authors = ["Francisco Cunha <francisccdn@gmail.com>"]
+license = "GPL-3.0-or-later"
+description = "A command line application to organize Spotify playlists"
+readme = "README.md"
+homepage = "https://github.com/franciscunha/sortify/tree/main"
+repository = "https://github.com/franciscunha/sortify/tree/main"
+keywords = ["music", "spotify", "playlists", "organize", "cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 clearscreen = "3.0.0"
