@@ -4,7 +4,7 @@ A command line application to organize Spotify playlists.
 
 Using Sortify, you can choose a playlist as the *source playlist*, and then have the option to *sort* each track in it. When sorting, you choose *destination playlists* to add that track to. When sorted, tracks are added to the other playlists, removed from the source, and added to your liked songs.
 
-![Screenshot](screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/franciscunha/sortify/main/screenshot.png)
 
 This is mostly a personal project to help in the very specific way I use Spotify:
 - I have a playlist called *buffer* to which I add all songs I hear about
@@ -50,7 +50,7 @@ cd sortify
 cargo build --release
 
 # Run the application
-./target/release/sortify.exe
+./target/release/sortify
 ```
 ### Binary release
 
