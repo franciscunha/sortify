@@ -227,6 +227,4 @@ pub fn goodbye(source_playlist_name: Option<&String>) {
     } else {
         println!("{}", bye);
     }
-    // wait three seconds
-    std::thread::sleep(std::time::Duration::from_secs(3));
 }
