@@ -24,7 +24,20 @@ After the initial log in, the app should be self-explanatory.
 
 ### Cargo
 
+You must have [Rust](https://www.rust-lang.org/) and [Cargo](https://doc.rust-lang.org/cargo/) installed.
+
+```sh
+# Install binary from crates.io
+cargo install sortify
+
+# Run the application 
+sortify
+# (if this doesn't work, your shell might not know to look for the binary in ~/.cargo/bin/)
+```
+
 ### Build from source
+
+You must have [Rust](https://www.rust-lang.org/) and [Cargo](https://doc.rust-lang.org/cargo/) installed.
 
 ```sh
 # Clone the repository
