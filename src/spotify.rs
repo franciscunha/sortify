@@ -8,7 +8,12 @@ use rspotify::{
 
 static APP_ID: &'static str = "9c7a1f7848ba4f5b839b4e199e2ed1a9";
 static REDIRECT_URI: &'static str = "http://localhost:8888/callback";
-static SCOPES: [&'static str; 2] = ["playlist-read-private", "playlist-read-collaborative"];
+static SCOPES: [&'static str; 4] = [
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "user-library-read",
+    "user-library-modify",
+];
 
 pub enum SpotifyPlaylistsError {
     Add(Vec<String>),
@@ -101,9 +106,12 @@ pub fn add_to_playlists(
     track_id: &TrackId,
     playlist_ids: &Vec<PlaylistId<'static>>,
 ) -> Result<(), SpotifyPlaylistsError> {
+    // keep track of names of playlists that had an error, to inform user
     let mut errors: Vec<String> = Vec::new();
 
+    // for each playlist
     for playlist_id in playlist_ids {
+        // try to add track to playlist
         let is_err = spotify
             .playlist_add_items(
                 playlist_id.clone_static(),
@@ -112,24 +120,39 @@ pub fn add_to_playlists(
             )
             .is_err();
 
-        if is_err {
+        // if failed and reason is not because playlist already contain tracks
+        if is_err && !is_track_in_playlist(spotify, playlist_id, track_id) {
+            // log the playlist name
             errors.push(
                 if let Ok(playlist) =
                     spotify.playlist(playlist_id.clone_static(), Some("name"), None)
                 {
                     playlist.name
                 } else {
+                    // if it doesn't have a name
                     format!("Playlist with ID {}", playlist_id)
                 },
             );
         }
     }
 
-    if spotify
-        .current_user_saved_tracks_add(iter::once(track_id.clone_static()))
-        .is_err()
+    // check if track is in liked songs
+    let is_track_in_liked_songs = if let Ok(contains_vec) =
+        spotify.current_user_saved_tracks_contains(iter::once(track_id.clone_static()))
     {
-        errors.push(String::from("Liked Songs"));
+        contains_vec.contains(&true)
+    } else {
+        false
+    };
+
+    if !is_track_in_liked_songs {
+        // try to save it if it isn't
+        if spotify
+            .current_user_saved_tracks_add(iter::once(track_id.clone_static()))
+            .is_err()
+        {
+            errors.push(String::from("Liked Songs"));
+        }
     }
 
     if errors.is_empty() {
@@ -137,4 +160,22 @@ pub fn add_to_playlists(
     } else {
         Err(SpotifyPlaylistsError::Add(errors))
     }
+}
+
+fn is_track_in_playlist(
+    spotify: &AuthCodePkceSpotify,
+    playlist_id: &PlaylistId<'static>,
+    track_id: &TrackId,
+) -> bool {
+    for full_track in tracks_in_playlist(spotify, playlist_id.clone()) {
+        match full_track.id {
+            None => continue,
+            Some(other_id) => {
+                if other_id == *track_id {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
