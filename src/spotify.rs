@@ -8,7 +8,12 @@ use rspotify::{
 
 static APP_ID: &'static str = "9c7a1f7848ba4f5b839b4e199e2ed1a9";
 static REDIRECT_URI: &'static str = "http://localhost:8888/callback";
-static SCOPES: [&'static str; 2] = ["playlist-read-private", "playlist-read-collaborative"];
+static SCOPES: [&'static str; 4] = [
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "user-library-read",
+    "user-library-modify",
+];
 
 pub enum SpotifyPlaylistsError {
     Add(Vec<String>),
@@ -55,9 +60,12 @@ pub fn tracks_in_playlist(
     playlist_id: PlaylistId<'static>,
 ) -> Vec<FullTrack> {
     spotify
-        .playlist_items(playlist_id, None, None)
+        .playlist_items(playlist_id.clone(), None, None)
         .filter_map(|result| {
             result
+                .inspect_err(|e| {
+                    log::warn!("Error getting item from playlist {}: {}", playlist_id, e)
+                })
                 .ok()
                 .and_then(|playlist_item| playlist_item.track)
                 .and_then(|playable_track| match playable_track {
@@ -73,26 +81,36 @@ pub fn remove_from_playlist(
     track_id: &TrackId,
     playlist_id: &PlaylistId<'static>,
 ) -> Result<(), SpotifyPlaylistsError> {
+    log::info!("Removing track from playlist {}", playlist_id);
+
     let is_ok = spotify
         .playlist_remove_all_occurrences_of_items(
             playlist_id.clone_static(),
             iter::once(PlayableId::Track(track_id.clone())),
             None,
         )
+        .inspect_err(|e| {
+            log::error!(
+                "Failed to remove track {} from playlist {}: {}",
+                track_id,
+                playlist_id,
+                e
+            )
+        })
         .is_ok();
 
     if is_ok {
-        Ok(())
+        return Ok(());
+    }
+
+    if let Ok(playlist) = spotify.playlist(playlist_id.clone_static(), Some("name"), None) {
+        let name = playlist.name;
+        Err(SpotifyPlaylistsError::Remove(vec![name]))
     } else {
-        if let Ok(playlist) = spotify.playlist(playlist_id.clone_static(), Some("name"), None) {
-            let name = playlist.name;
-            Err(SpotifyPlaylistsError::Remove(vec![name]))
-        } else {
-            Err(SpotifyPlaylistsError::Remove(vec![format!(
-                "Playlist with ID {}",
-                playlist_id
-            )]))
-        }
+        Err(SpotifyPlaylistsError::Remove(vec![format!(
+            "Playlist with ID {}",
+            playlist_id
+        )]))
     }
 }
 
@@ -101,35 +119,71 @@ pub fn add_to_playlists(
     track_id: &TrackId,
     playlist_ids: &Vec<PlaylistId<'static>>,
 ) -> Result<(), SpotifyPlaylistsError> {
+    // keep track of names of playlists that had an error, to inform user
     let mut errors: Vec<String> = Vec::new();
 
+    // for each playlist
     for playlist_id in playlist_ids {
+        log::info!("Adding track to playlist {}", playlist_id);
+
+        // try to add track to playlist
         let is_err = spotify
             .playlist_add_items(
                 playlist_id.clone_static(),
                 iter::once(PlayableId::Track(track_id.clone())),
                 None,
             )
+            .inspect_err(|e| log::warn!("Failed to add track to playlist: {}", e))
             .is_err();
 
-        if is_err {
+        // if failed and reason is not because playlist already contain tracks
+        if is_err && !is_track_in_playlist(spotify, playlist_id, track_id) {
+            log::error!("Track {} is not in playlist {}", track_id, playlist_id);
+
+            // log the playlist name
             errors.push(
                 if let Ok(playlist) =
                     spotify.playlist(playlist_id.clone_static(), Some("name"), None)
                 {
                     playlist.name
                 } else {
+                    // if it doesn't have a name
                     format!("Playlist with ID {}", playlist_id)
                 },
             );
         }
     }
 
-    if spotify
-        .current_user_saved_tracks_add(iter::once(track_id.clone_static()))
-        .is_err()
-    {
-        errors.push(String::from("Liked Songs"));
+    // check if track is in liked songs
+    let is_track_in_liked_songs = if let Ok(contains_vec) = spotify
+        .current_user_saved_tracks_contains(iter::once(track_id.clone_static()))
+        .inspect_err(|e| {
+            log::error!(
+                "Failed to check if track {} is in user's liked songs: {}",
+                track_id,
+                e
+            )
+        }) {
+        contains_vec.contains(&true)
+    } else {
+        false
+    };
+
+    if !is_track_in_liked_songs {
+        // try to save it if it isn't
+        if spotify
+            .current_user_saved_tracks_add(iter::once(track_id.clone_static()))
+            .inspect_err(|e| {
+                log::error!(
+                    "Failed to add track {} to user's liked songs: {}",
+                    track_id,
+                    e
+                )
+            })
+            .is_err()
+        {
+            errors.push(String::from("Liked Songs"));
+        }
     }
 
     if errors.is_empty() {
@@ -137,4 +191,22 @@ pub fn add_to_playlists(
     } else {
         Err(SpotifyPlaylistsError::Add(errors))
     }
+}
+
+fn is_track_in_playlist(
+    spotify: &AuthCodePkceSpotify,
+    playlist_id: &PlaylistId<'static>,
+    track_id: &TrackId,
+) -> bool {
+    for full_track in tracks_in_playlist(spotify, playlist_id.clone()) {
+        match full_track.id {
+            None => continue,
+            Some(other_id) => {
+                if other_id == *track_id {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
