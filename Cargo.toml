@@ -13,7 +13,9 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 clearscreen = "3.0.0"
+flexi_logger = "0.29.2"
 image = "=0.24.6"
+log = "0.4.22"
 rascii_art = "=0.4.5"
 rodio = "0.19.0"
 rspotify = { version = "0.13.2", default-features = false, features = ["client-ureq", "ureq-rustls-tls", "cli", "env-file"] }

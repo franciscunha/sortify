@@ -86,13 +86,19 @@ pub fn handle_track(
     spotify: &AuthCodePkceSpotify,
     audio_player: &mut Option<AudioPlayer>,
 ) -> ControlFlow<()> {
+    log::info!("Handling track {}", ui::track::summary(&track));
+
     if let None = track.id {
+        log::warn!("Track has no ID, skipping");
         return ControlFlow::Continue(());
     }
 
     // start playing track preview in separate thread while other things load
     if let Some(audio) = audio_player {
-        audio.play_track_preview(&track);
+        let res = audio.play_track_preview(&track);
+        if res.is_none() {
+            log::warn!("Failed to play track preview");
+        }
     }
 
     // spin up ui for a track and get user's interaction

@@ -60,9 +60,12 @@ pub fn tracks_in_playlist(
     playlist_id: PlaylistId<'static>,
 ) -> Vec<FullTrack> {
     spotify
-        .playlist_items(playlist_id, None, None)
+        .playlist_items(playlist_id.clone(), None, None)
         .filter_map(|result| {
             result
+                .inspect_err(|e| {
+                    log::warn!("Error getting item from playlist {}: {}", playlist_id, e)
+                })
                 .ok()
                 .and_then(|playlist_item| playlist_item.track)
                 .and_then(|playable_track| match playable_track {
@@ -78,26 +81,36 @@ pub fn remove_from_playlist(
     track_id: &TrackId,
     playlist_id: &PlaylistId<'static>,
 ) -> Result<(), SpotifyPlaylistsError> {
+    log::info!("Removing track from playlist {}", playlist_id);
+
     let is_ok = spotify
         .playlist_remove_all_occurrences_of_items(
             playlist_id.clone_static(),
             iter::once(PlayableId::Track(track_id.clone())),
             None,
         )
+        .inspect_err(|e| {
+            log::error!(
+                "Failed to remove track {} from playlist {}: {}",
+                track_id,
+                playlist_id,
+                e
+            )
+        })
         .is_ok();
 
     if is_ok {
-        Ok(())
+        return Ok(());
+    }
+
+    if let Ok(playlist) = spotify.playlist(playlist_id.clone_static(), Some("name"), None) {
+        let name = playlist.name;
+        Err(SpotifyPlaylistsError::Remove(vec![name]))
     } else {
-        if let Ok(playlist) = spotify.playlist(playlist_id.clone_static(), Some("name"), None) {
-            let name = playlist.name;
-            Err(SpotifyPlaylistsError::Remove(vec![name]))
-        } else {
-            Err(SpotifyPlaylistsError::Remove(vec![format!(
-                "Playlist with ID {}",
-                playlist_id
-            )]))
-        }
+        Err(SpotifyPlaylistsError::Remove(vec![format!(
+            "Playlist with ID {}",
+            playlist_id
+        )]))
     }
 }
 
@@ -111,6 +124,8 @@ pub fn add_to_playlists(
 
     // for each playlist
     for playlist_id in playlist_ids {
+        log::info!("Adding track to playlist {}", playlist_id);
+
         // try to add track to playlist
         let is_err = spotify
             .playlist_add_items(
@@ -118,10 +133,13 @@ pub fn add_to_playlists(
                 iter::once(PlayableId::Track(track_id.clone())),
                 None,
             )
+            .inspect_err(|e| log::warn!("Failed to add track to playlist: {}", e))
             .is_err();
 
         // if failed and reason is not because playlist already contain tracks
         if is_err && !is_track_in_playlist(spotify, playlist_id, track_id) {
+            log::error!("Track {} is not in playlist {}", track_id, playlist_id);
+
             // log the playlist name
             errors.push(
                 if let Ok(playlist) =
@@ -137,9 +155,15 @@ pub fn add_to_playlists(
     }
 
     // check if track is in liked songs
-    let is_track_in_liked_songs = if let Ok(contains_vec) =
-        spotify.current_user_saved_tracks_contains(iter::once(track_id.clone_static()))
-    {
+    let is_track_in_liked_songs = if let Ok(contains_vec) = spotify
+        .current_user_saved_tracks_contains(iter::once(track_id.clone_static()))
+        .inspect_err(|e| {
+            log::error!(
+                "Failed to check if track {} is in user's liked songs: {}",
+                track_id,
+                e
+            )
+        }) {
         contains_vec.contains(&true)
     } else {
         false
@@ -149,6 +173,13 @@ pub fn add_to_playlists(
         // try to save it if it isn't
         if spotify
             .current_user_saved_tracks_add(iter::once(track_id.clone_static()))
+            .inspect_err(|e| {
+                log::error!(
+                    "Failed to add track {} to user's liked songs: {}",
+                    track_id,
+                    e
+                )
+            })
             .is_err()
         {
             errors.push(String::from("Liked Songs"));
