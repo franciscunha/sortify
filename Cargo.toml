@@ -1,6 +1,6 @@
 [package]
 name = "sortify"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 authors = ["Francisco Cunha <francisccdn@gmail.com>"]
 license = "GPL-3.0-or-later"
