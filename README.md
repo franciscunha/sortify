@@ -20,6 +20,14 @@ On first usage, the app should redirect you to log into Spotify. If that doesn't
 
 After the initial log in, the app should be self-explanatory.
 
+## Dependencies (Linux only)
+
+Sortify uses [rodio](https://github.com/RustAudio/rodio) to play audio, so it shares its [dependencies](https://github.com/RustAudio/rodio?tab=readme-ov-file#dependencieslinux-only) on Linux.
+
+> [*Install the*] `libasound2-dev` package on Debian and Ubuntu distributions and `alsa-lib-devel` on Fedora.
+
+[Rodio has an issue](https://github.com/RustAudio/rodio/issues/200) that discusses this further.
+
 ## Installation
 
 ### Cargo
